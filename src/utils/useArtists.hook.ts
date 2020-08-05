@@ -1,95 +1,53 @@
-// export {};
-import { gql, useLazyQuery, ApolloQueryResult } from '@apollo/client';
-import { ArtistEdge, Artist } from '../types';
+import { useLazyQuery, ApolloQueryResult } from '@apollo/client';
+import { SearchResponse, UseArtistsHook } from '../types';
+import queries from './queries';
+import * as helpers from './helpers';
 
-export type SearchResponse = {
-  search: {
-    artists: {
-      __typename?: string;
-      edges: ArtistEdge[];
-      pageInfo: {
-        endCursor: string;
-      };
-    };
-  };
-};
+const updateQuery = (
+  prevResult: SearchResponse,
+  { fetchMoreResult: newResult }: { fetchMoreResult?: SearchResponse }
+): SearchResponse => {
+  const newEdges = helpers.extractEdges(newResult);
+  const pageInfo = helpers.extractPageInfo(newResult);
+  const { __typename } = prevResult.search.artists;
 
-const SEARCH_ARTISTS_QUERY = gql`
-  query SearchArtists($name: String!, $cursor: String) {
-    search {
-      artists(query: $name, first: 6, after: $cursor) {
-        edges {
-          node {
-            id
-            name
-            country
-            type
-          }
-        }
-        pageInfo {
-          endCursor
-        }
+  return newEdges && newEdges.length
+    ? {
+        search: {
+          artists: {
+            __typename,
+            edges: [...prevResult.search.artists.edges, ...newEdges],
+            pageInfo,
+          },
+        },
       }
-    }
-  }
-`;
-
-type UseArtistsHook = {
-  artists: Artist[];
-  loading: boolean;
-  loadArtists: () => void;
-  loadMore?: () => Promise<ApolloQueryResult<SearchResponse>> | null;
+    : prevResult;
 };
 
 export default function useArtists(name: string): UseArtistsHook {
-  const [loadArtists, { loading, data, fetchMore }] = useLazyQuery(
-    SEARCH_ARTISTS_QUERY,
-    {
-      notifyOnNetworkStatusChange: true,
-      variables: { name, cursor: '' },
-    }
-  );
+  const { SEARCH_ARTISTS_QUERY: query } = queries;
+  const [loadArtists, { loading, data, fetchMore }] = useLazyQuery(query, {
+    notifyOnNetworkStatusChange: true,
+    variables: { name, cursor: '' },
+  });
 
-  if (!data || (loading && !data.search))
-    return { loading, artists: [], loadArtists };
+  if (!data || (loading && !data.search) || !fetchMore) {
+    return { loading, artists: [], hasNextPage: false, loadArtists };
+  }
 
-  const loadMore = (): Promise<ApolloQueryResult<SearchResponse>> | null => {
-    if (!fetchMore) return null;
-
-    return fetchMore({
-      query: SEARCH_ARTISTS_QUERY,
+  const loadMore = (): Promise<ApolloQueryResult<SearchResponse>> =>
+    fetchMore({
+      query,
       variables: {
         cursor: data.search.artists.pageInfo.endCursor,
         name,
       },
-      updateQuery: (prevResult, { fetchMoreResult: newResult }) => {
-        const newEdges =
-          newResult && newResult.search && newResult.search.artists.edges;
-        const pageInfo = (newResult && newResult.search.artists.pageInfo) || {
-          endCursor: '',
-        };
-        const { __typename } = prevResult.search.artists;
-
-        return newEdges && newEdges.length
-          ? {
-              search: {
-                artists: {
-                  __typename,
-                  edges: [...prevResult.search.artists.edges, ...newEdges],
-                  pageInfo,
-                },
-              },
-            }
-          : prevResult;
-      },
+      updateQuery,
     });
-  };
 
   return {
-    artists:
-      (data &&
-        (data.search.artists.edges as ArtistEdge[]).map(({ node }) => node)) ||
-      [],
+    artists: helpers.extractEdges(data).map(({ node }) => node),
+    hasNextPage: data.search.artists.pageInfo.hasNextPage,
     loading,
     loadArtists,
     loadMore,
