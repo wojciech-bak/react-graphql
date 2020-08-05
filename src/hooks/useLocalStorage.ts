@@ -1,48 +1,40 @@
 import { useState } from 'react';
-import { ArtistData } from '../types';
-import { LOCAL_STORAGE_FAVOURITES_KEY as KEY } from '../utils/constants';
-import { getFavourites } from '../utils/helpers';
+import { ArtistData, FavouritesCollection } from '../types';
+import service from '../utils/favouritesService';
 
-type LocalStorageHook = [
-  ArtistData | null,
-  (value: ArtistData) => void,
-  () => void,
-  boolean
-];
+type LocalStorageHook = {
+  storedData: FavouritesCollection | null;
+  addToFavourites: (id: string, item: ArtistData) => void;
+  removeFromFavourites: (id: string) => void;
+};
 
-export default function useLocalStorage(artistId: string): LocalStorageHook {
-  const [storedValue, setStoredValue] = useState(() => {
+export default function useLocalStorage(): LocalStorageHook {
+  const [storedData, setStoredData] = useState(() => {
     try {
-      const collection = getFavourites();
-      const item = collection && collection[artistId];
-
-      return item || null;
+      return service.getFavouritesCollection();
     } catch (error) {
       console.log(error); // eslint-disable-line
       return null;
     }
   });
 
-  const setValue = (value: ArtistData): void => {
+  const addToFavourites = (id: string, value: ArtistData): void => {
     try {
-      setStoredValue(value);
-      const collection = getFavourites();
-      collection[artistId] = value;
-      window.localStorage.setItem(KEY, JSON.stringify(collection));
+      service.addFavourite(id, value);
+      setStoredData(service.getFavouritesCollection());
     } catch (error) {
       console.log(error); // eslint-disable-line
     }
   };
 
-  const unsetValue = (): void => {
+  const removeFromFavourites = (id: string): void => {
     try {
-      const collection = getFavourites();
-      if (collection[artistId]) delete collection[artistId];
-      window.localStorage.setItem(KEY, JSON.stringify(collection));
+      service.removeFavourite(id);
+      setStoredData(service.getFavouritesCollection());
     } catch (error) {
       console.log(error); // eslint-disable-line
     }
   };
 
-  return [storedValue, setValue, unsetValue, !!storedValue];
+  return { storedData, addToFavourites, removeFromFavourites };
 }

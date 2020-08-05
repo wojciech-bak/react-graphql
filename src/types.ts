@@ -1,5 +1,14 @@
 import { ApolloQueryResult } from '@apollo/client';
 
+export type FavouritesCollection = {
+  [index: string]: ArtistData;
+};
+
+export type AlertConfig = {
+  open: boolean;
+  text: string;
+};
+
 export type Artist = {
   name: string;
   id: string;
@@ -30,14 +39,6 @@ export type SearchResponse = {
       pageInfo: PageInfo;
     };
   };
-};
-
-export type UseArtistsHook = {
-  artists: Artist[];
-  loading: boolean;
-  loadArtists: () => void;
-  hasNextPage: boolean;
-  loadMore?: () => Promise<ApolloQueryResult<SearchResponse>> | null;
 };
 
 export type Recording = {
@@ -71,6 +72,7 @@ export type ArtistLookupResponse = {
       };
       country: string | null;
       id: string;
+      mbid: string;
       name: string;
       releaseGroups: {
         nodes: ReleaseGroup[];
@@ -87,8 +89,15 @@ export type Album = {
 };
 
 export type ArtistData = {
+  id: string;
   name: string;
   country: string;
   area: string;
   albums: Album[];
+};
+
+export type ArtistDetailsProps = {
+  saved: FavouritesCollection | null;
+  onSave: (id: string, data: ArtistData) => void;
+  onRemove: (id: string) => void;
 };

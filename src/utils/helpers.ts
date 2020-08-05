@@ -8,7 +8,6 @@ import {
   ArtistLookupResponse,
   ArtistData,
 } from '../types';
-import { LOCAL_STORAGE_FAVOURITES_KEY as KEY } from './constants';
 
 export const extractEdges = (response?: SearchResponse): ArtistEdge[] => {
   const artists = response && response.search && response.search.artists;
@@ -49,17 +48,32 @@ export const extractArtistDetails = (
 
   if (!artist) return null;
 
+  const id = artist.mbid || '';
   const name = artist.name || '';
   const country = artist.country || '';
   const area = (artist.area && artist.area.name) || '';
   const albums = formatAlbums(artist.releaseGroups.nodes);
 
-  return { name, country, area, albums };
+  return { id, name, country, area, albums };
 };
 
-export const getFavourites = (): { [index: string]: ArtistData } => {
-  const saved = window.localStorage.getItem(KEY);
-  const collection = saved && JSON.parse(saved);
+export const updateSearchQuery = (
+  prevResult: SearchResponse,
+  { fetchMoreResult: newResult }: { fetchMoreResult?: SearchResponse }
+): SearchResponse => {
+  const newEdges = extractEdges(newResult);
+  const pageInfo = extractPageInfo(newResult);
+  const { __typename } = prevResult.search.artists;
 
-  return collection || {};
+  return newEdges && newEdges.length
+    ? {
+        search: {
+          artists: {
+            __typename,
+            edges: [...prevResult.search.artists.edges, ...newEdges],
+            pageInfo,
+          },
+        },
+      }
+    : prevResult;
 };

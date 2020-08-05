@@ -1,27 +1,17 @@
 import { useLazyQuery, ApolloQueryResult } from '@apollo/client';
-import { SearchResponse, UseArtistsHook } from '../types';
+import { SearchResponse, Artist } from '../types';
 import queries from '../utils/queries';
-import * as helpers from '../utils/helpers';
+import {
+  updateSearchQuery as updateQuery,
+  extractEdges,
+} from '../utils/helpers';
 
-const updateQuery = (
-  prevResult: SearchResponse,
-  { fetchMoreResult: newResult }: { fetchMoreResult?: SearchResponse }
-): SearchResponse => {
-  const newEdges = helpers.extractEdges(newResult);
-  const pageInfo = helpers.extractPageInfo(newResult);
-  const { __typename } = prevResult.search.artists;
-
-  return newEdges && newEdges.length
-    ? {
-        search: {
-          artists: {
-            __typename,
-            edges: [...prevResult.search.artists.edges, ...newEdges],
-            pageInfo,
-          },
-        },
-      }
-    : prevResult;
+type UseArtistsHook = {
+  artists: Artist[];
+  loading: boolean;
+  loadArtists: () => void;
+  hasNextPage: boolean;
+  loadMore?: () => Promise<ApolloQueryResult<SearchResponse>> | null;
 };
 
 export default function useArtists(name: string): UseArtistsHook {
@@ -46,7 +36,7 @@ export default function useArtists(name: string): UseArtistsHook {
     });
 
   return {
-    artists: helpers.extractEdges(data).map(({ node }) => node),
+    artists: extractEdges(data).map(({ node }) => node),
     hasNextPage: data.search.artists.pageInfo.hasNextPage,
     loading,
     loadArtists,
