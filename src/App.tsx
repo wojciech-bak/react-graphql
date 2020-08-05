@@ -10,7 +10,7 @@ import Sidebar from './components/Sidebar';
 import useLocalStorage from './hooks/useLocalStorage';
 
 export const client = new ApolloClient({
-  uri: 'https://graphbrainz.herokuapp.com',
+  uri: process.env.REACT_APP_API_URL,
   cache: new InMemoryCache(),
 });
 
