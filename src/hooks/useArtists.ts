@@ -1,7 +1,7 @@
 import { useLazyQuery, ApolloQueryResult } from '@apollo/client';
 import { SearchResponse, UseArtistsHook } from '../types';
-import queries from './queries';
-import * as helpers from './helpers';
+import queries from '../utils/queries';
+import * as helpers from '../utils/helpers';
 
 const updateQuery = (
   prevResult: SearchResponse,

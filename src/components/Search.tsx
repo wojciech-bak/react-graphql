@@ -3,7 +3,7 @@ import TextField from '@material-ui/core/TextField';
 import InputAdornment from '@material-ui/core/InputAdornment';
 import { SearchOutlined } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/core/styles';
-import useDebounce from '../utils/useDebounce.hook';
+import useDebounce from '../hooks/useDebounce';
 
 // Debouncing inspired by:
 // https://dev.to/gabe_ragland/debouncing-with-react-hooks-jci
