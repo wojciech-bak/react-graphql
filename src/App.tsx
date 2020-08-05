@@ -2,12 +2,12 @@ import React from 'react';
 import { ApolloClient, InMemoryCache, ApolloProvider } from '@apollo/client';
 import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 import { makeStyles } from '@material-ui/core/styles';
-import Container from '@material-ui/core/Container';
-import Grid from '@material-ui/core/Grid';
-import Paper from '@material-ui/core/Paper';
+import { Container, Grid } from '@material-ui/core';
 
 import MusicBrowser from './views/MusicBrowser';
 import ArtistDetails from './views/ArtistDetails';
+import Sidebar from './components/Sidebar';
+import useLocalStorage from './hooks/useLocalStorage';
 
 export const client = new ApolloClient({
   uri: 'https://graphbrainz.herokuapp.com',
@@ -15,11 +15,6 @@ export const client = new ApolloClient({
 });
 
 const useStyles = makeStyles((theme) => ({
-  paper: {
-    padding: theme.spacing(4),
-    textAlign: 'center',
-    color: theme.palette.text.secondary,
-  },
   container: {
     marginTop: theme.spacing(5),
   },
@@ -27,6 +22,11 @@ const useStyles = makeStyles((theme) => ({
 
 const App: React.FunctionComponent = () => {
   const classes = useStyles();
+  const {
+    storedData,
+    addToFavourites,
+    removeFromFavourites,
+  } = useLocalStorage();
 
   return (
     <ApolloProvider client={client}>
@@ -36,7 +36,11 @@ const App: React.FunctionComponent = () => {
             <Grid item xs={8}>
               <Switch>
                 <Route path="/artist/:artistId">
-                  <ArtistDetails />
+                  <ArtistDetails
+                    saved={storedData}
+                    onSave={addToFavourites}
+                    onRemove={removeFromFavourites}
+                  />
                 </Route>
                 <Route path="/">
                   <MusicBrowser />
@@ -44,7 +48,7 @@ const App: React.FunctionComponent = () => {
               </Switch>
             </Grid>
             <Grid item xs={4}>
-              <Paper className={classes.paper}>xs=6</Paper>
+              <Sidebar favourites={storedData} />
             </Grid>
           </Grid>
         </Container>

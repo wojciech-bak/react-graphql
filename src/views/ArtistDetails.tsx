@@ -1,11 +1,15 @@
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { makeStyles } from '@material-ui/core/styles';
-import { Paper, Typography, Breadcrumbs, Tooltip } from '@material-ui/core';
-import { StarBorder, Star, ArrowBackOutlined } from '@material-ui/icons';
+import { Paper, Typography, Snackbar } from '@material-ui/core';
+import MuiAlert from '@material-ui/lab/Alert';
 import AlbumsTable from '../components/AlbumsTable';
 import Preloader from '../components/Preloader';
-import useArtistData from '../hooks/useArtistData';
+import GoBackButton from '../components/GoBackButton';
+import { ArtistDetailsProps } from '../types';
+import StarButton from '../components/StarButton';
+import useToasts from '../hooks/useToasts';
+import useArtistDetails from '../hooks/useArtistDetails';
 
 const useStyles = makeStyles((theme) => ({
   paper: {
@@ -22,105 +26,79 @@ const useStyles = makeStyles((theme) => ({
     marginTop: theme.spacing(1),
     marginBottom: theme.spacing(3),
   },
-  backlink: {
-    textDecoration: 'none',
-    textTransform: 'uppercase',
-    display: 'flex',
-    alignItems: 'center',
-  },
-  star: {
-    position: 'absolute',
-    top: '30px',
-    right: '30px',
-    color: '#edd328',
-    cursor: 'pointer',
-  },
 }));
 
-const ArtistDetails: React.FunctionComponent = () => {
+const ArtistDetails: React.FunctionComponent<ArtistDetailsProps> = ({
+  saved,
+  onSave,
+  onRemove,
+}) => {
   const classes = useStyles();
   const { artistId } = useParams();
-  const {
-    loading,
-    error,
-    details,
-    saved,
-    addToFavourites,
-    removeFromFavourites,
-  } = useArtistData(artistId);
-
-  if (error) return <div> ERROR </div>;
-
-  const breadcrumbs = (
-    <Breadcrumbs aria-label="breadcrumb">
-      <Link color="inherit" to="/" className={classes.backlink}>
-        <ArrowBackOutlined /> Home
-      </Link>
-    </Breadcrumbs>
+  const { details, error, loading, isFavourite } = useArtistDetails(
+    artistId,
+    saved
   );
+  const { alert, showAlert } = useToasts();
 
-  const artistName = (
-    <Typography variant="h3" component="h3" className={classes.title}>
-      {details.name}
-    </Typography>
-  );
+  const starBtnAction = isFavourite
+    ? (): void => {
+        onRemove(artistId);
+        showAlert('Successfully removed from favourites');
+      }
+    : (): void => {
+        onSave(artistId, details);
+        showAlert('Successfully added to favourites');
+      };
 
-  const addToFavouritesBtn = (
-    <Tooltip title="Add to favourites">
-      <StarBorder
-        className={classes.star}
-        onClick={(): void => {
-          addToFavourites(details);
-        }}
-      />
-    </Tooltip>
-  );
+  if (error) {
+    return (
+      <Paper className={classes.paper}>
+        <GoBackButton />
+        <Typography variant="h5" component="h5">
+          Error : (
+        </Typography>
+      </Paper>
+    );
+  }
 
-  const removeFromFavouritesBtn = (
-    <Tooltip title="Remove from favourites">
-      <Star
-        className={classes.star}
-        onClick={(): void => {
-          removeFromFavourites();
-        }}
-      />
-    </Tooltip>
-  );
-
-  const location = (
-    <Typography variant="h6" component="h6" className={classes.subheading}>
-      Location: {` ${details.country} ${details.area}`}
-    </Typography>
-  );
-
-  const albumsTableHeading = (
-    <Typography
-      variant="h5"
-      align="left"
-      component="h4"
-      className={classes.subheading}
-    >
-      Albums {details.albums && `(${details.albums.length})`}
-    </Typography>
-  );
+  if (loading) {
+    return (
+      <Paper className={classes.paper}>
+        <GoBackButton />
+        <Preloader />
+      </Paper>
+    );
+  }
 
   return (
     <Paper className={classes.paper}>
-      {breadcrumbs}
+      <GoBackButton />
 
-      {loading && <Preloader />}
+      <Snackbar open={alert.open}>
+        <MuiAlert severity="success">{alert.text}</MuiAlert>
+      </Snackbar>
 
-      {!loading && !saved && addToFavouritesBtn}
+      <StarButton isFavourite={isFavourite} action={starBtnAction} />
 
-      {!loading && saved && removeFromFavouritesBtn}
+      <Typography variant="h3" component="h3" className={classes.title}>
+        {details.name}
+      </Typography>
 
-      {!loading && artistName}
+      <Typography variant="h6" component="h6" className={classes.subheading}>
+        Location: {` ${details.country} ${details.area}`}
+      </Typography>
 
-      {!loading && location}
+      <Typography
+        variant="h5"
+        align="left"
+        component="h4"
+        className={classes.subheading}
+      >
+        Albums {details.albums && `(${details.albums.length})`}
+      </Typography>
 
-      {!loading && albumsTableHeading}
-
-      {!loading && <AlbumsTable albums={details.albums || []} />}
+      <AlbumsTable albums={details.albums || []} />
     </Paper>
   );
 };

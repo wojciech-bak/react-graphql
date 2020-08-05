@@ -27,6 +27,7 @@ const ARTIST_DETAILS_QUERY = gql`
     lookup {
       artist(mbid: $mbid) {
         id
+        mbid
         name
         country
         area {
