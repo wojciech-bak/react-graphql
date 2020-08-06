@@ -71,7 +71,7 @@ const App: React.FunctionComponent = () => {
           <Grid item xs={12} className={classes.credits}>
             <Tooltip title="View on GitHub">
               <a
-                href="https://github.com"
+                href="https://github.com/wojciech-bak/react-graphql"
                 rel="noopener norefferer"
                 // eslint-disable-next-line react/jsx-no-target-blank
                 target="_blank"
